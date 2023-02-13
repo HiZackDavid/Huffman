@@ -5,7 +5,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Huffman {
@@ -29,7 +32,7 @@ public class Huffman {
 	 * @param filePath The location of the file.
 	 * @throws FileNotFoundException Thrown if the file is not found.
 	 */
-	public Map<Character, Integer> createFrequencyTable(String filePath) throws FileNotFoundException {
+	public LinkedHashMap<Character, Integer> createFrequencyTable(String filePath) throws FileNotFoundException {
 		LinkedHashMap<Character, Integer> frequency = new LinkedHashMap<>();
 		File file = new File(filePath);
 		FileInputStream reader = new FileInputStream(file);
@@ -56,6 +59,7 @@ public class Huffman {
 		} finally {
 			try {
 				bis.close();
+				reader.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -63,13 +67,35 @@ public class Huffman {
 		System.out.println("number of bytes read in binary mode : " + nbBytes);
 		System.out.println(frequency.entrySet());
 
-		return frequency;
+		return sortFrequencyTable(frequency);
+	}
+
+	/**
+	 * <p>
+	 * Sorts a frequency table in descending order of it's value.
+	 * </p>
+	 * 
+	 * @param frequencyTable The frequency table to sort.
+	 * @return A sorted frequency table.
+	 */
+	private LinkedHashMap<Character, Integer> sortFrequencyTable(LinkedHashMap<Character, Integer> frequencyTable) {
+		LinkedHashMap<Character, Integer> sortedFrequencyTable = new LinkedHashMap<>();
+		List<Map.Entry<Character, Integer>> entries = new ArrayList<>(frequencyTable.entrySet());
+		
+		Collections.sort(entries, new FrequencyComparator());
+
+		for (Map.Entry<Character, Integer> entry : entries) {
+			sortedFrequencyTable.put(entry.getKey(), entry.getValue());
+		}
+
+		return sortedFrequencyTable;
 	}
 
 	public static void main(String[] args) {
 		Huffman huff = new Huffman();
 		try {
-			Map<Character, Integer> frequency = huff.createFrequencyTable("src/laboratoire2/Temp.txt");
+			LinkedHashMap<Character, Integer> frequency = huff.createFrequencyTable("src/laboratoire2/Temp.txt");
+			System.out.println(frequency.entrySet());
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
