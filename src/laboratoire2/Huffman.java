@@ -5,7 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class Huffman {
@@ -30,7 +30,7 @@ public class Huffman {
 	 * @throws FileNotFoundException Thrown if the file is not found.
 	 */
 	public Map<Character, Integer> createFrequencyTable(String filePath) throws FileNotFoundException {
-		Map<Character, Integer> frequency = new HashMap<>();
+		LinkedHashMap<Character, Integer> frequency = new LinkedHashMap<>();
 		File file = new File(filePath);
 		FileInputStream reader = new FileInputStream(file);
 		BufferedInputStream bis = null;
@@ -40,7 +40,7 @@ public class Huffman {
 			int singleCharInt;
 			char singleChar;
 			bis = new BufferedInputStream(reader);
-			
+
 			while ((singleCharInt = bis.read()) != END_OF_FILE) {
 				singleChar = (char) singleCharInt;
 				System.out.println(String.format("0x%X %c", singleCharInt, singleChar));
@@ -61,19 +61,15 @@ public class Huffman {
 			}
 		}
 		System.out.println("number of bytes read in binary mode : " + nbBytes);
-		
-		return  frequency;
+		System.out.println(frequency.entrySet());
+
+		return frequency;
 	}
 
 	public static void main(String[] args) {
 		Huffman huff = new Huffman();
 		try {
 			Map<Character, Integer> frequency = huff.createFrequencyTable("src/laboratoire2/Temp.txt");
-			for (Character name: frequency.keySet()) {
-			    String key = name.toString();
-			    String value = frequency.get(name).toString();
-			    System.out.println("[" + key + ":" + value + "]");
-			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
