@@ -72,7 +72,7 @@ public class Huffman {
 
 	/**
 	 * <p>
-	 * Sorts a frequency table in descending order of it's value.
+	 * Sorts a frequency table in ascending order of it's value.
 	 * </p>
 	 * 
 	 * @param frequencyTable The frequency table to sort.

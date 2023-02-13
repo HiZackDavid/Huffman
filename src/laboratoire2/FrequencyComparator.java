@@ -8,7 +8,7 @@ public class FrequencyComparator implements Comparator<Map.Entry<Character, Inte
 
 	@Override
 	public int compare(Entry<Character, Integer> o1, Entry<Character, Integer> o2) {
-		return (o2.getValue().compareTo(o1.getValue()));
+		return (o1.getValue().compareTo(o2.getValue()));
 	}
 
 }
