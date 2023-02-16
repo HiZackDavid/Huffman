@@ -7,14 +7,14 @@ public class Node {
   private Node leftChild;
   private Node rightChild;
 
-  Node(char key, int value) {
-    this.key = key;
+  Node(int value) {
     this.value = value;
     this.rightChild = null;
     this.leftChild = null;
   }
 
-  Node(int value) {
+  Node(char key, int value) {
+    this.key = key;
     this.value = value;
     this.rightChild = null;
     this.leftChild = null;

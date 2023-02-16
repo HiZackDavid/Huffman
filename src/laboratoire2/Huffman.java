@@ -98,8 +98,16 @@ public class Huffman {
   }
 
   public void createHuffmanTree(Map<Character, Integer> frequencyTable) {
+    Node[] nodes = new Node[frequencyTable.size()];
+    int index = 0;
+    for (Map.Entry<Character, Integer> entry : frequencyTable.entrySet()) {
+      nodes[index] = new Node(entry.getKey(), entry.getValue());
+      index++;
+    }
+
+    this.combine(nodes);
     // TODO: Extraire les deux éléments ayant les fréquences les plus faibles
-    Iterator<Entry<Character, Integer>> itr = frequencyTable
+    /* Iterator<Entry<Character, Integer>> itr = frequencyTable
       .entrySet()
       .iterator();
     int loop = 0;
@@ -107,10 +115,14 @@ public class Huffman {
       Object tmp = itr.next();
       System.out.println(tmp);
       loop++;
-    }
+    } */
   }
 
-  public Object combine(Map<Character, Integer> frequencyTable) {
+  public Object combine(Node[] nodes) {
+    if (nodes.length == 1) {
+      return nodes;
+    }
+
     return null;
   }
 
