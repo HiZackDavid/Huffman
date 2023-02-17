@@ -6,12 +6,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 public class Huffman {
 
@@ -97,7 +96,7 @@ public class Huffman {
     return sortedFrequencyTable;
   }
 
-  public void createHuffmanTree(Map<Character, Integer> frequencyTable) {
+  public Node createHuffmanTree(Map<Character, Integer> frequencyTable) {
     Node[] nodes = new Node[frequencyTable.size()];
     int index = 0;
     for (Map.Entry<Character, Integer> entry : frequencyTable.entrySet()) {
@@ -105,25 +104,35 @@ public class Huffman {
       index++;
     }
 
-    this.combine(nodes);
-    // TODO: Extraire les deux éléments ayant les fréquences les plus faibles
-    /* Iterator<Entry<Character, Integer>> itr = frequencyTable
-      .entrySet()
-      .iterator();
-    int loop = 0;
-    while (itr.hasNext() && loop <= 1) {
-      Object tmp = itr.next();
-      System.out.println(tmp);
-      loop++;
-    } */
+    return combine(nodes, 0);
   }
 
-  public Object combine(Node[] nodes) {
-    if (nodes.length == 1) {
-      return nodes;
+  /**
+   * <p>Combines nodes in a list of nodes until only one is left.</p>
+   *
+   * @param nodes List of nodes.
+   * @param pointer Index of the item to combine.
+   * @return A single node containing all the nodes from the list of nodes. It is arranged as a binary tree.
+   */
+  public Node combine(Node[] nodes, int pointer) {
+    if (nodes[nodes.length - 1] == null) { // Last node has been combined
+      /* Clear null elements in array */
+      nodes =
+        Arrays
+          .stream(nodes)
+          .filter(node -> (node != null))
+          .toArray(Node[]::new);
+      return nodes[0];
     }
 
-    return null;
+    Node combined = new Node();
+    combined.setLeftChild(nodes[0]);
+    combined.setRightChild(nodes[pointer + 1]);
+
+    nodes[0] = combined;
+    nodes[pointer + 1] = null;
+    pointer++;
+    return combine(nodes, pointer);
   }
 
   public static void main(String[] args) {
@@ -135,11 +144,11 @@ public class Huffman {
 
       huff.createHuffmanTree(frequency);
       // Formatting
-      frequency.forEach((key, val) -> {
+      /* frequency.forEach((key, val) -> {
         String str = ("" + key + " : " + val);
         str = str.replace(System.lineSeparator(), "HEY");
         System.out.println(str);
-      });
+      }); */
     } catch (FileNotFoundException e) {
       e.printStackTrace();
     }

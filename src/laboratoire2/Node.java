@@ -7,6 +7,11 @@ public class Node {
   private Node leftChild;
   private Node rightChild;
 
+  Node() {
+    this.rightChild = null;
+    this.leftChild = null;
+  }
+
   Node(int value) {
     this.value = value;
     this.rightChild = null;
@@ -42,6 +47,7 @@ public class Node {
 
   public void setLeftChild(Node leftChild) {
     this.leftChild = leftChild;
+    this.value += leftChild.getValue();
   }
 
   public Node getRightChild() {
@@ -50,7 +56,6 @@ public class Node {
 
   public void setRightChild(Node rightChild) {
     this.rightChild = rightChild;
+    this.value += rightChild.getValue();
   }
-
-  public void add(int value) {}
 }
