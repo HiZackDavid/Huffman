@@ -4,7 +4,9 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -15,6 +17,8 @@ import java.util.Map;
 public class Huffman {
 
   public static final int END_OF_FILE = -1;
+
+  public static FileOutputStream encodeOutputStream;
 
   public void Compresser(String nomFichierEntre, String nomFichierSortie) {}
 
@@ -106,6 +110,32 @@ public class Huffman {
 
     return combine(nodes, 0);
   }
+  
+  public static void charEncoding(Node node,String path) throws IOException{
+    Node childNodeLeft = node.getLeftChild();
+    Node childNodeRight = node.getRightChild();
+    //No children
+    if(childNodeLeft==null && childNodeRight==null){
+      encode(path);
+    }else{
+      //left child
+      if(childNodeLeft!=null){
+        charEncoding(childNodeLeft,path+""+"1");
+      //right child
+      }
+      if(childNodeRight!=null){
+        charEncoding(childNodeRight,path+""+"0");
+      }
+    }
+  }
+
+  public static void encode(String path) throws IOException{
+    if(path==""){
+      encodeOutputStream.write(0);
+    }else{
+      encodeOutputStream.write((path+"\n").getBytes());
+    }
+  }
 
   /**
    * <p>Combines nodes in a list of nodes until only one is left.</p>
@@ -115,7 +145,7 @@ public class Huffman {
    * @return A single node containing all the nodes from the list of nodes. It is arranged as a binary tree.
    */
   public Node combine(Node[] nodes, int pointer) {
-    if (nodes[nodes.length - 1] == null) { // Last node has been combined
+    if (nodes[nodes.length - 1] == null || nodes.length==1) { // Last node has been combined
       /* Clear null elements in array */
       nodes =
         Arrays
@@ -124,6 +154,11 @@ public class Huffman {
           .toArray(Node[]::new);
       return nodes[0];
     }
+
+    /*if(nodes.length==1){
+      return nodes[0];
+    }
+    */
 
     Node combined = new Node();
     combined.setLeftChild(nodes[0]);
@@ -135,6 +170,10 @@ public class Huffman {
     return combine(nodes, pointer);
   }
 
+  public static void testBinaryFile() throws IOException{
+    File file = new File("src/laboratoire2/Temp_2.txt");
+  }
+
   public static void main(String[] args) {
     Huffman huff = new Huffman();
     try {
@@ -142,7 +181,18 @@ public class Huffman {
         "src/laboratoire2/Temp.txt"
       );
 
-      huff.createHuffmanTree(frequency);
+      Node tree = huff.createHuffmanTree(frequency);
+      try{
+        File file = new File("src/laboratoire2/Temp_2.txt");
+        file.delete();
+        encodeOutputStream = new FileOutputStream(new File("src/laboratoire2/Temp_2.txt"),true);
+        encodeOutputStream.write((frequency+"\n").getBytes());
+        charEncoding(tree,"");
+        testBinaryFile();
+        encodeOutputStream.flush();
+      }catch(Exception e){
+        System.out.println(e);
+      }
       // Formatting
       /* frequency.forEach((key, val) -> {
         String str = ("" + key + " : " + val);

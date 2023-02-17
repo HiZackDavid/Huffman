@@ -33,6 +33,10 @@ public class Node {
     return this.value;
   }
 
+  public boolean hasChildren(){
+    return this.getLeftChild()!=null && this.getRightChild() !=null;
+  }
+
   public void setKey(char key) {
     this.key = key;
   }
