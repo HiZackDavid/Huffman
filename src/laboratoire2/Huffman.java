@@ -6,7 +6,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,6 +18,10 @@ public class Huffman {
   public static final int END_OF_FILE = -1;
 
   public static FileOutputStream encodeOutputStream;
+
+  public static BitOutputStream bos;
+
+  public static LinkedHashMap<Character, String> correspondaceTable = new LinkedHashMap<Character, String>();
 
   public void Compresser(String nomFichierEntre, String nomFichierSortie) {}
 
@@ -44,7 +47,6 @@ public class Huffman {
     FileInputStream reader = new FileInputStream(file);
     BufferedInputStream bis = null;
     //int nbBytes = 0;
-
     try {
       int singleCharInt;
       char singleChar;
@@ -110,30 +112,23 @@ public class Huffman {
 
     return combine(nodes, 0);
   }
-  
-  public static void charEncoding(Node node,String path) throws IOException{
+
+  public static void createCorrespondaceTable(Node node,String path) throws IOException{
     Node childNodeLeft = node.getLeftChild();
     Node childNodeRight = node.getRightChild();
     //No children
     if(childNodeLeft==null && childNodeRight==null){
-      encode(path);
+      //encode(path,node);
+      correspondaceTable.put(node.getKey(), path);
     }else{
       //left child
       if(childNodeLeft!=null){
-        charEncoding(childNodeLeft,path+""+"1");
+        createCorrespondaceTable(childNodeLeft,path+""+"1");
       //right child
       }
       if(childNodeRight!=null){
-        charEncoding(childNodeRight,path+""+"0");
+        createCorrespondaceTable(childNodeRight,path+""+"0");
       }
-    }
-  }
-
-  public static void encode(String path) throws IOException{
-    if(path==""){
-      encodeOutputStream.write(0);
-    }else{
-      encodeOutputStream.write((path+"\n").getBytes());
     }
   }
 
@@ -186,8 +181,13 @@ public class Huffman {
         File file = new File("src/laboratoire2/Temp_2.txt");
         file.delete();
         encodeOutputStream = new FileOutputStream(new File("src/laboratoire2/Temp_2.txt"),true);
+        bos = new BitOutputStream("src/laboratoire2/Temp_2.txt");
         encodeOutputStream.write((frequency+"\n").getBytes());
-        charEncoding(tree,"");
+        createCorrespondaceTable(tree,"");
+        correspondaceTable.forEach((key,val) ->{
+          System.out.println("key "+key);
+          System.out.println("value "+val);
+        });
         testBinaryFile();
         encodeOutputStream.flush();
       }catch(Exception e){
