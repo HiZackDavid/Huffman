@@ -125,33 +125,25 @@ public class Huffman {
     return combine(nodes, 0);
   }
 
-  public static void createCorrespondaceTable(Node node,String path) throws IOException{
-
-  /**
-   * Creates a table of correspondance containing a path of each individual character in a Huffman tree node.
-   *
-   * @param node The huffman tree in the form of a node.
-   * @param path
-   * @throws IOException
-   */
-  public static void charEncoding(Node node, String path) throws IOException {
+  public static void createCorrespondaceTable(Node node, String path) throws IOException {
     Node childNodeLeft = node.getLeftChild();
     Node childNodeRight = node.getRightChild();
-    //No children
-    if(childNodeLeft==null && childNodeRight==null){
-      //encode(path,node);
-      correspondaceTable.put(node.getKey(), path);
-    }else{
+    // No children
     if (childNodeLeft == null && childNodeRight == null) {
-      encode(path);
+      // encode(path,node);
+      correspondaceTable.put(node.getKey(), path);
     } else {
-      //left child
-      if (childNodeLeft != null) {
-        createCorrespondaceTable(childNodeLeft, path + "" + "1");
-        //right child
-      }
-      if (childNodeRight != null) {
-        createCorrespondaceTable(childNodeRight, path + "" + "0");
+      if (childNodeLeft == null && childNodeRight == null) {
+        encode(path);
+      } else {
+        // left child
+        if (childNodeLeft != null) {
+          createCorrespondaceTable(childNodeLeft, path + "" + "1");
+          // right child
+        }
+        if (childNodeRight != null) {
+          createCorrespondaceTable(childNodeRight, path + "" + "0");
+        }
       }
     }
   }
@@ -207,7 +199,6 @@ public class Huffman {
       LinkedHashMap<Character, Integer> frequency = huff.createFrequencyTable(
         "src/laboratoire2/Temp.txt"
       );
-
       Node tree = huff.createHuffmanTree(frequency);
       try {
         File file = new File("src/laboratoire2/Temp_2.txt");
