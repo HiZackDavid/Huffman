@@ -1,11 +1,13 @@
 package laboratoire2;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,19 +20,76 @@ public class Huffman {
   public static final int END_OF_FILE = -1;
 
   public static FileOutputStream encodeOutputStream;
-  private String fileCharacters;
-
-  public Huffman() {
-    fileCharacters = "";
-  }
 
   public static BitOutputStream bos;
 
-  public static LinkedHashMap<Character, String> correspondaceTable = new LinkedHashMap<Character, String>();
+  public LinkedHashMap<Character, String> correspondanceTable = new LinkedHashMap<Character, String>();
+  private Node root;
 
-  public void Compresser(String nomFichierEntre, String nomFichierSortie) {}
+  public void Compresser(String nomFichierEntre, String nomFichierSortie) {
+    try {
+      FileInputStream reader = new FileInputStream(nomFichierEntre);
+      BitOutputStream bos = new BitOutputStream(nomFichierSortie);
+      BufferedInputStream bis = new BufferedInputStream(reader);
 
-  public void Decompresser(String nomFichierEntre, String nomFichierSortie) {}
+      LinkedHashMap<Character, Integer> frequencyTable =
+        this.createFrequencyTable(nomFichierEntre);
+      this.root = this.createHuffmanTree(frequencyTable);
+      this.createcorrespondanceTable(this.root, "");
+
+      int singleCharInt;
+      char singleChar;
+
+      /* ObjectOutputStream oos = new ObjectOutputStream(
+        new FileOutputStream(new File(nomFichierSortie))
+      );
+      oos.writeObject(root);
+      oos.close(); */
+
+      System.out.println(frequencyTable);
+      System.out.println(correspondanceTable);
+      while ((singleCharInt = bis.read()) != END_OF_FILE) {
+        singleChar = (char) singleCharInt;
+        String path = correspondanceTable.get(singleChar);
+        for (char direction : path.toCharArray()) {
+          if (direction == '0') {
+            bos.writeBit(0);
+          } else {
+            bos.writeBit(1);
+          }
+        }
+      }
+
+      bis.close();
+      bos.close();
+      reader.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void Decompresser(String nomFichierEntre, String nomFichierSortie) {
+    try {
+      BitInputStream bis = new BitInputStream(nomFichierEntre);
+      FileOutputStream fos = new FileOutputStream(nomFichierSortie);
+      BufferedOutputStream bos = new BufferedOutputStream(fos);
+
+      int direction;
+      int count = 0;
+
+      while ((direction = bis.readBit()) != END_OF_FILE) {
+        //System.out.print(direction);
+      }
+
+      bos.close();
+      fos.close();
+      bis.close();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
 
   /**
    * <p>
@@ -61,7 +120,6 @@ public class Huffman {
         singleChar = (char) singleCharInt;
         //System.out.println(String.format("0x%X %c", singleCharInt, singleChar));
         //nbBytes++;
-        this.fileCharacters = this.fileCharacters + singleChar;
         if (!frequency.containsKey(singleChar)) {
           frequency.put(singleChar, 1);
         } else {
@@ -125,37 +183,6 @@ public class Huffman {
     return combine(nodes, 0);
   }
 
-  public static void createCorrespondaceTable(Node node, String path) throws IOException {
-    Node childNodeLeft = node.getLeftChild();
-    Node childNodeRight = node.getRightChild();
-    // No children
-    if (childNodeLeft == null && childNodeRight == null) {
-      // encode(path,node);
-      correspondaceTable.put(node.getKey(), path);
-    } else {
-      if (childNodeLeft == null && childNodeRight == null) {
-        encode(path);
-      } else {
-        // left child
-        if (childNodeLeft != null) {
-          createCorrespondaceTable(childNodeLeft, path + "" + "1");
-          // right child
-        }
-        if (childNodeRight != null) {
-          createCorrespondaceTable(childNodeRight, path + "" + "0");
-        }
-      }
-    }
-  }
-
-  public static void encode(String path) throws IOException {
-    if (path == "") {
-      encodeOutputStream.write(0);
-    } else {
-      encodeOutputStream.write((path + "\n").getBytes());
-    }
-  }
-
   /**
    * <p>Combines nodes in a list of nodes until only one is left.</p>
    *
@@ -174,11 +201,6 @@ public class Huffman {
       return nodes[0];
     }
 
-    /*if(nodes.length==1){
-      return nodes[0];
-    }
-    */
-
     Node combined = new Node();
     combined.setLeftChild(nodes[0]);
     combined.setRightChild(nodes[pointer + 1]);
@@ -189,13 +211,54 @@ public class Huffman {
     return combine(nodes, pointer);
   }
 
+  public void createcorrespondanceTable(Node node, String path)
+    throws IOException {
+    Node childNodeLeft = node.getLeftChild();
+    Node childNodeRight = node.getRightChild();
+    // No children
+    if (childNodeLeft == null && childNodeRight == null) {
+      // encode(path,node);
+      correspondanceTable.put(node.getKey(), path);
+    } else {
+      // left child
+      if (childNodeLeft != null) {
+        createcorrespondanceTable(childNodeLeft, path + "1");
+        // right child
+      }
+      if (childNodeRight != null) {
+        createcorrespondanceTable(childNodeRight, path + "0");
+      }
+    }
+  }
+
+  public static void encode(String path) throws IOException {
+    if (path == "") {
+      encodeOutputStream.write(0);
+    } else {
+      encodeOutputStream.write((path + "\n").getBytes());
+    }
+  }
+
   public static void testBinaryFile() throws IOException {
     File file = new File("src/laboratoire2/Temp_2.txt");
   }
 
   public static void main(String[] args) {
+    String initial = "src/laboratoire2/Temp.txt";
+    String compressed = "src/laboratoire2/TempC.bin";
+    String decompressed = "src/laboratoire2/TempD.bin";
+
     Huffman huff = new Huffman();
-    try {
+    huff.Compresser(initial, compressed);
+    huff.Decompresser(compressed, decompressed);
+    File initialFile = new File(initial);
+    File compressedFile = new File(compressed);
+
+    System.out.println("Initial file size " + initialFile.length() + " bytes");
+    System.out.println(
+      "Compressed file size " + compressedFile.length() + " bytes"
+    );
+    /*try {
       LinkedHashMap<Character, Integer> frequency = huff.createFrequencyTable(
         "src/laboratoire2/Temp.txt"
       );
@@ -207,10 +270,11 @@ public class Huffman {
           new FileOutputStream(new File("src/laboratoire2/Temp_2.txt"), true);
         bos = new BitOutputStream("src/laboratoire2/Temp_2.txt");
         encodeOutputStream.write((frequency + "\n").getBytes());
-        createCorrespondaceTable(tree, "");
-        correspondaceTable.forEach((key,val) ->{
-          System.out.println("key "+key);
-          System.out.println("value "+val);
+        huff.createcorrespondanceTable(tree, "");
+        //huff.writeInFile(correspondanceTable);
+        correspondanceTable.forEach((key, val) -> {
+          System.out.println("key " + key);
+          System.out.println("value " + val);
         });
         testBinaryFile();
         encodeOutputStream.flush();
@@ -223,8 +287,8 @@ public class Huffman {
         str = str.replace(System.lineSeparator(), "HEY");
         System.out.println(str);
       }); */
-    } catch (FileNotFoundException e) {
+    /*} catch (FileNotFoundException e) {
       e.printStackTrace();
-    }
+    }*/
   }
 }
