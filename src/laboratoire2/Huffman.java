@@ -18,6 +18,11 @@ public class Huffman {
   public static final int END_OF_FILE = -1;
 
   public static FileOutputStream encodeOutputStream;
+  private String fileCharacters;
+
+  public Huffman() {
+    fileCharacters = "";
+  }
 
   public static BitOutputStream bos;
 
@@ -56,6 +61,7 @@ public class Huffman {
         singleChar = (char) singleCharInt;
         //System.out.println(String.format("0x%X %c", singleCharInt, singleChar));
         //nbBytes++;
+        this.fileCharacters = this.fileCharacters + singleChar;
         if (!frequency.containsKey(singleChar)) {
           frequency.put(singleChar, 1);
         } else {
@@ -102,6 +108,12 @@ public class Huffman {
     return sortedFrequencyTable;
   }
 
+  /**
+   * Creates a Huffman using a given frequency table.
+   *
+   * @param frequencyTable Frequency table.
+   * @return A single node as a binary tree.
+   */
   public Node createHuffmanTree(Map<Character, Integer> frequencyTable) {
     Node[] nodes = new Node[frequencyTable.size()];
     int index = 0;
@@ -114,6 +126,15 @@ public class Huffman {
   }
 
   public static void createCorrespondaceTable(Node node,String path) throws IOException{
+
+  /**
+   * Creates a table of correspondance containing a path of each individual character in a Huffman tree node.
+   *
+   * @param node The huffman tree in the form of a node.
+   * @param path
+   * @throws IOException
+   */
+  public static void charEncoding(Node node, String path) throws IOException {
     Node childNodeLeft = node.getLeftChild();
     Node childNodeRight = node.getRightChild();
     //No children
@@ -121,14 +142,25 @@ public class Huffman {
       //encode(path,node);
       correspondaceTable.put(node.getKey(), path);
     }else{
+    if (childNodeLeft == null && childNodeRight == null) {
+      encode(path);
+    } else {
       //left child
-      if(childNodeLeft!=null){
-        createCorrespondaceTable(childNodeLeft,path+""+"1");
-      //right child
+      if (childNodeLeft != null) {
+        createCorrespondaceTable(childNodeLeft, path + "" + "1");
+        //right child
       }
-      if(childNodeRight!=null){
-        createCorrespondaceTable(childNodeRight,path+""+"0");
+      if (childNodeRight != null) {
+        createCorrespondaceTable(childNodeRight, path + "" + "0");
       }
+    }
+  }
+
+  public static void encode(String path) throws IOException {
+    if (path == "") {
+      encodeOutputStream.write(0);
+    } else {
+      encodeOutputStream.write((path + "\n").getBytes());
     }
   }
 
@@ -140,7 +172,7 @@ public class Huffman {
    * @return A single node containing all the nodes from the list of nodes. It is arranged as a binary tree.
    */
   public Node combine(Node[] nodes, int pointer) {
-    if (nodes[nodes.length - 1] == null || nodes.length==1) { // Last node has been combined
+    if (nodes[nodes.length - 1] == null || nodes.length == 1) { // Last node has been combined
       /* Clear null elements in array */
       nodes =
         Arrays
@@ -165,7 +197,7 @@ public class Huffman {
     return combine(nodes, pointer);
   }
 
-  public static void testBinaryFile() throws IOException{
+  public static void testBinaryFile() throws IOException {
     File file = new File("src/laboratoire2/Temp_2.txt");
   }
 
@@ -177,20 +209,21 @@ public class Huffman {
       );
 
       Node tree = huff.createHuffmanTree(frequency);
-      try{
+      try {
         File file = new File("src/laboratoire2/Temp_2.txt");
         file.delete();
-        encodeOutputStream = new FileOutputStream(new File("src/laboratoire2/Temp_2.txt"),true);
+        encodeOutputStream =
+          new FileOutputStream(new File("src/laboratoire2/Temp_2.txt"), true);
         bos = new BitOutputStream("src/laboratoire2/Temp_2.txt");
-        encodeOutputStream.write((frequency+"\n").getBytes());
-        createCorrespondaceTable(tree,"");
+        encodeOutputStream.write((frequency + "\n").getBytes());
+        createCorrespondaceTable(tree, "");
         correspondaceTable.forEach((key,val) ->{
           System.out.println("key "+key);
           System.out.println("value "+val);
         });
         testBinaryFile();
         encodeOutputStream.flush();
-      }catch(Exception e){
+      } catch (Exception e) {
         System.out.println(e);
       }
       // Formatting
