@@ -6,7 +6,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,6 +18,11 @@ public class Huffman {
   public static final int END_OF_FILE = -1;
 
   public static FileOutputStream encodeOutputStream;
+  private String fileCharacters;
+
+  public Huffman() {
+    fileCharacters = "";
+  }
 
   public void Compresser(String nomFichierEntre, String nomFichierSortie) {}
 
@@ -54,6 +58,7 @@ public class Huffman {
         singleChar = (char) singleCharInt;
         //System.out.println(String.format("0x%X %c", singleCharInt, singleChar));
         //nbBytes++;
+        this.fileCharacters = this.fileCharacters + singleChar;
         if (!frequency.containsKey(singleChar)) {
           frequency.put(singleChar, 1);
         } else {
@@ -100,6 +105,12 @@ public class Huffman {
     return sortedFrequencyTable;
   }
 
+  /**
+   * Creates a Huffman using a given frequency table.
+   *
+   * @param frequencyTable Frequency table.
+   * @return A single node as a binary tree.
+   */
   public Node createHuffmanTree(Map<Character, Integer> frequencyTable) {
     Node[] nodes = new Node[frequencyTable.size()];
     int index = 0;
@@ -110,30 +121,37 @@ public class Huffman {
 
     return combine(nodes, 0);
   }
-  
-  public static void charEncoding(Node node,String path) throws IOException{
+
+  /**
+   * Creates a table of correspondance containing a path of each individual character in a Huffman tree node.
+   *
+   * @param node The huffman tree in the form of a node.
+   * @param path
+   * @throws IOException
+   */
+  public static void charEncoding(Node node, String path) throws IOException {
     Node childNodeLeft = node.getLeftChild();
     Node childNodeRight = node.getRightChild();
     //No children
-    if(childNodeLeft==null && childNodeRight==null){
+    if (childNodeLeft == null && childNodeRight == null) {
       encode(path);
-    }else{
+    } else {
       //left child
-      if(childNodeLeft!=null){
-        charEncoding(childNodeLeft,path+""+"1");
-      //right child
+      if (childNodeLeft != null) {
+        charEncoding(childNodeLeft, path + "" + "1");
+        //right child
       }
-      if(childNodeRight!=null){
-        charEncoding(childNodeRight,path+""+"0");
+      if (childNodeRight != null) {
+        charEncoding(childNodeRight, path + "" + "0");
       }
     }
   }
 
-  public static void encode(String path) throws IOException{
-    if(path==""){
+  public static void encode(String path) throws IOException {
+    if (path == "") {
       encodeOutputStream.write(0);
-    }else{
-      encodeOutputStream.write((path+"\n").getBytes());
+    } else {
+      encodeOutputStream.write((path + "\n").getBytes());
     }
   }
 
@@ -145,7 +163,7 @@ public class Huffman {
    * @return A single node containing all the nodes from the list of nodes. It is arranged as a binary tree.
    */
   public Node combine(Node[] nodes, int pointer) {
-    if (nodes[nodes.length - 1] == null || nodes.length==1) { // Last node has been combined
+    if (nodes[nodes.length - 1] == null || nodes.length == 1) { // Last node has been combined
       /* Clear null elements in array */
       nodes =
         Arrays
@@ -170,7 +188,7 @@ public class Huffman {
     return combine(nodes, pointer);
   }
 
-  public static void testBinaryFile() throws IOException{
+  public static void testBinaryFile() throws IOException {
     File file = new File("src/laboratoire2/Temp_2.txt");
   }
 
@@ -182,15 +200,16 @@ public class Huffman {
       );
 
       Node tree = huff.createHuffmanTree(frequency);
-      try{
+      try {
         File file = new File("src/laboratoire2/Temp_2.txt");
         file.delete();
-        encodeOutputStream = new FileOutputStream(new File("src/laboratoire2/Temp_2.txt"),true);
-        encodeOutputStream.write((frequency+"\n").getBytes());
-        charEncoding(tree,"");
+        encodeOutputStream =
+          new FileOutputStream(new File("src/laboratoire2/Temp_2.txt"), true);
+        encodeOutputStream.write((frequency + "\n").getBytes());
+        charEncoding(tree, "");
         testBinaryFile();
         encodeOutputStream.flush();
-      }catch(Exception e){
+      } catch (Exception e) {
         System.out.println(e);
       }
       // Formatting
