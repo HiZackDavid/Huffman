@@ -7,57 +7,33 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 public class Huffman {
 
   public static final int END_OF_FILE = -1;
 
-  public static FileOutputStream encodeOutputStream;
-
-  public static BitOutputStream bos;
-
-  public LinkedHashMap<Character, String> correspondanceTable = new LinkedHashMap<Character, String>();
-  private Node root;
-
   public void Compresser(String nomFichierEntre, String nomFichierSortie) {
+    Node huffmanTree = this.createHuffmanTree(nomFichierEntre);
+    Map<Character, String> correspondance =
+      this.createCorrespondanceTable(huffmanTree);
+
+    System.out.println(
+      "Frequency table : " + this.createFrequencyTable(nomFichierEntre)
+    );
+    System.out.println("Correspondance table : " + correspondance);
+
+    // Wrtite compressed output
     try {
       FileInputStream reader = new FileInputStream(nomFichierEntre);
       BitOutputStream bos = new BitOutputStream(nomFichierSortie);
       BufferedInputStream bis = new BufferedInputStream(reader);
 
-      LinkedHashMap<Character, Integer> frequencyTable =
-        this.createFrequencyTable(nomFichierEntre);
-      this.root = this.createHuffmanTree(frequencyTable);
-      this.createcorrespondanceTable(this.root, "");
-
       int singleCharInt;
-      char singleChar;
-
-      /* ObjectOutputStream oos = new ObjectOutputStream(
-        new FileOutputStream(new File(nomFichierSortie))
-      );
-      oos.writeObject(root);
-      oos.close(); */
-
-      System.out.println(frequencyTable);
-      System.out.println(correspondanceTable);
       while ((singleCharInt = bis.read()) != END_OF_FILE) {
-        singleChar = (char) singleCharInt;
-        String path = correspondanceTable.get(singleChar);
-        for (char direction : path.toCharArray()) {
-          if (direction == '0') {
-            bos.writeBit(0);
-          } else {
-            bos.writeBit(1);
-          }
-        }
+        this.writeToFile((char) singleCharInt, correspondance, bos);
       }
 
       bis.close();
@@ -66,19 +42,132 @@ public class Huffman {
     } catch (IOException e) {
       e.printStackTrace();
     }
+
+    // Write the compressed HuffmanTree
+    try {
+      int lastDotIndex = nomFichierSortie.lastIndexOf('.');
+      String compressedTreeFilePath =
+        nomFichierSortie.substring(0, lastDotIndex) +
+        "H" +
+        nomFichierSortie.substring(lastDotIndex);
+
+      this.writeTree(huffmanTree, compressedTreeFilePath);
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
+   * <p>Writes a compressed version of the huffman tree into a file.</p>
+   * @param huffmanTree
+   * @throws FileNotFoundException
+   */
+  private void writeTree(Node huffmanTree, String filePath)
+    throws FileNotFoundException {
+    try {
+      BitOutputStream bos = new BitOutputStream(filePath);
+      this.writeTree(huffmanTree, bos);
+      bos.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    System.out.println("Compressed Huffman Tree : ");
+    BitInputStream bis = new BitInputStream(filePath);
+    int value;
+    while ((value = bis.readBit()) != END_OF_FILE) {
+      System.out.print(value);
+    }
+    bis.close();
+  }
+
+  /**
+   * <p>Writes the huffman tree on a binary file in a compressed way.</p>
+   * @param huffmanTree The huffman tree.
+   * @throws IOException
+   */
+  private void writeTree(Node huffmanTree, BitOutputStream bos)
+    throws IOException {
+    // Is leaf
+    if (huffmanTree.isLeaf()) {
+      bos.writeBit(1);
+
+      /* System.out.println(
+        huffmanTree.getKey() +
+        " to binary =" +
+        Integer.toBinaryString(huffmanTree.getKey())
+      ); */
+
+      String charToByte = Integer.toBinaryString(huffmanTree.getKey());
+      if (charToByte.length() < 8) {
+        int missingBits = 8 - charToByte.length();
+        for (int i = 0; i < missingBits; i++) {
+          charToByte = '0' + charToByte;
+        }
+      }
+
+      for (int i = 0; i < charToByte.length(); i++) {
+        bos.writeBit(Integer.parseInt(charToByte.charAt(i) + ""));
+      }
+    } else {
+      bos.writeBit(0);
+      writeTree(huffmanTree.getLeftChild(), bos);
+      writeTree(huffmanTree.getRightChild(), bos);
+    }
+  }
+
+  /**
+   * <p>Writes a single character to the binary file using the correspondance table.</p>
+   *
+   * @param singleChar The character to be written.
+   * @param correspondance The correspondance table.
+   * @param bos The bit writer.
+   */
+  private void writeToFile(
+    char singleChar,
+    Map<Character, String> correspondance,
+    BitOutputStream bos
+  ) {
+    String path = correspondance.get(singleChar);
+    for (char direction : path.toCharArray()) {
+      if (direction == '0') {
+        bos.writeBit(0);
+      } else {
+        bos.writeBit(1);
+      }
+    }
   }
 
   public void Decompresser(String nomFichierEntre, String nomFichierSortie) {
+    Node huffmanTreeRoot = this.readTree("src/laboratoire2/TempCH.bin");
+
     try {
       BitInputStream bis = new BitInputStream(nomFichierEntre);
       FileOutputStream fos = new FileOutputStream(nomFichierSortie);
       BufferedOutputStream bos = new BufferedOutputStream(fos);
 
       int direction;
-      int count = 0;
 
+      /* System.out.println("\nCompressed file : ");
       while ((direction = bis.readBit()) != END_OF_FILE) {
-        //System.out.print(direction);
+        System.out.print(direction);
+      } */
+
+      Node tree = huffmanTreeRoot;
+      while ((direction = bis.readBit()) != END_OF_FILE) {
+        if (direction == 0) {
+          tree = tree.getLeftChild();
+          if (tree.isLeaf()) {
+            bos.write(tree.getKey());
+            tree = huffmanTreeRoot;
+          }
+        } else {
+          tree = tree.getRightChild();
+          if (tree.isLeaf()) {
+            bos.write(tree.getKey());
+            tree = huffmanTreeRoot;
+          }
+        }
       }
 
       bos.close();
@@ -89,11 +178,53 @@ public class Huffman {
     } catch (IOException e) {
       e.printStackTrace();
     }
+
+    System.out.println();
+  }
+
+  /**
+   * <p>Builds a huffman tree from a compressed version of the tree in binary file.</p>
+   * @param filePath The location of the compressed Huffman Tree in a binary file.
+   * @return A single node as a huffman tree (with the frequency all set to 0).
+   */
+  private Node readTree(String filePath) {
+    return this.readTree(new BitInputStream(filePath));
+  }
+
+  /**
+   * <p>Reads the huffman tree in binary form that is found in a compressed file <br>
+   * and returns a single node as a huffman tree (with the frequency all set to 0).</p>
+   *
+   * @param bis The bit reader (Simply pass {@code new BitInputStream(filePath)})
+   * @return A single node as a huffman tree (with the frequency all set to 0).
+   */
+  private Node readTree(BitInputStream bis) {
+    int value;
+    while ((value = bis.readBit()) != END_OF_FILE) {
+      if (value == 1) {
+        String binary = "";
+        for (int i = 0; i < 8; i++) {
+          binary += bis.readBit();
+        }
+        System.out.println("\nCharacter : " + binary);
+        System.out.println(
+          "Decimal value : " + (char) Integer.parseInt(binary, 2)
+        );
+        return new Node((char) Integer.parseInt(binary, 2), 0);
+      } else {
+        Node internalNode = new Node(Node.EMPTY_KEY, 0);
+        internalNode.setLeftChild(readTree(bis));
+        internalNode.setRightChild(readTree(bis));
+        return internalNode;
+      }
+    }
+    bis.close();
+    return null;
   }
 
   /**
    * <p>
-   * Creates a frequency table.
+   * Creates an unsorted frequency table.
    * </p>
    * <p>
    * It will read a file and create a table containing the number of <br>
@@ -101,20 +232,17 @@ public class Huffman {
    * </p>
    *
    * @param filePath The location of the file.
-   * @throws FileNotFoundException Thrown if the file is not found.
+   * @return A map of characters and integers.
    */
-  public LinkedHashMap<Character, Integer> createFrequencyTable(
-    String filePath
-  ) throws FileNotFoundException {
-    LinkedHashMap<Character, Integer> frequency = new LinkedHashMap<>();
-    File file = new File(filePath);
-    FileInputStream reader = new FileInputStream(file);
-    BufferedInputStream bis = null;
+  public Map<Character, Integer> createFrequencyTable(String filePath) {
+    HashMap<Character, Integer> frequency = new HashMap<>();
     //int nbBytes = 0;
     try {
+      File file = new File(filePath);
+      FileInputStream reader = new FileInputStream(file);
+      BufferedInputStream bis = new BufferedInputStream(reader);
       int singleCharInt;
       char singleChar;
-      bis = new BufferedInputStream(reader);
 
       while ((singleCharInt = bis.read()) != END_OF_FILE) {
         singleChar = (char) singleCharInt;
@@ -126,169 +254,131 @@ public class Huffman {
           frequency.put(singleChar, frequency.get(singleChar) + 1);
         }
       }
+
+      bis.close();
+      reader.close();
     } catch (IOException e) {
       e.printStackTrace();
-    } finally {
-      try {
-        bis.close();
-        reader.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
     }
     //System.out.println("number of bytes read in binary mode : " + nbBytes);
-
-    return sortFrequencyTable(frequency);
-  }
-
-  /**
-   * <p>
-   * Sorts a frequency table in ascending order of it's value.
-   * </p>
-   *
-   * @param frequencyTable The frequency table to sort.
-   * @return A sorted frequency table.
-   */
-  private LinkedHashMap<Character, Integer> sortFrequencyTable(
-    LinkedHashMap<Character, Integer> frequencyTable
-  ) {
-    LinkedHashMap<Character, Integer> sortedFrequencyTable = new LinkedHashMap<>();
-    List<Map.Entry<Character, Integer>> entries = new ArrayList<>(
-      frequencyTable.entrySet()
-    );
-
-    Collections.sort(entries, new FrequencyComparator());
-
-    for (Map.Entry<Character, Integer> entry : entries) {
-      sortedFrequencyTable.put(entry.getKey(), entry.getValue());
-    }
-
-    return sortedFrequencyTable;
+    return frequency;
   }
 
   /**
    * Creates a Huffman using a given frequency table.
    *
-   * @param frequencyTable Frequency table.
+   * @param frequency Frequency table.
    * @return A single node as a binary tree.
    */
-  public Node createHuffmanTree(Map<Character, Integer> frequencyTable) {
-    Node[] nodes = new Node[frequencyTable.size()];
-    int index = 0;
-    for (Map.Entry<Character, Integer> entry : frequencyTable.entrySet()) {
-      nodes[index] = new Node(entry.getKey(), entry.getValue());
-      index++;
+  public Node createHuffmanTree(String filePath) {
+    Map<Character, Integer> frequency = this.createFrequencyTable(filePath);
+
+    PriorityQueue<Node> priorityQueue = new PriorityQueue<>();
+    for (Map.Entry<Character, Integer> entry : frequency.entrySet()) {
+      priorityQueue.offer(new Node(entry.getKey(), entry.getValue()));
     }
 
-    return combine(nodes, 0);
+    return combine(priorityQueue);
   }
 
   /**
-   * <p>Combines nodes in a list of nodes until only one is left.</p>
+   * <p>Combines a priority queue of nodes to form a binary tree.</p>
    *
-   * @param nodes List of nodes.
-   * @param pointer Index of the item to combine.
-   * @return A single node containing all the nodes from the list of nodes. It is arranged as a binary tree.
+   * @param priorityQueue The priority queue of nodes.
+   * @return A single node in the form of a binary tree.
    */
-  public Node combine(Node[] nodes, int pointer) {
-    if (nodes[nodes.length - 1] == null || nodes.length == 1) { // Last node has been combined
-      /* Clear null elements in array */
-      nodes =
-        Arrays
-          .stream(nodes)
-          .filter(node -> (node != null))
-          .toArray(Node[]::new);
-      return nodes[0];
+  private Node combine(PriorityQueue<Node> priorityQueue) {
+    if (priorityQueue.size() == 1) {
+      return priorityQueue.poll();
     }
 
-    Node combined = new Node();
-    combined.setLeftChild(nodes[0]);
-    combined.setRightChild(nodes[pointer + 1]);
+    Node firstMin = priorityQueue.poll();
+    Node secondMin = priorityQueue.poll();
+    Node combined = new Node(
+      Node.EMPTY_KEY,
+      firstMin.getValue() + secondMin.getValue()
+    );
+    combined.setLeftChild(firstMin);
+    combined.setRightChild(secondMin);
 
-    nodes[0] = combined;
-    nodes[pointer + 1] = null;
-    pointer++;
-    return combine(nodes, pointer);
+    priorityQueue.offer(combined);
+
+    return combine(priorityQueue);
   }
 
-  public void createcorrespondanceTable(Node node, String path)
-    throws IOException {
-    Node childNodeLeft = node.getLeftChild();
-    Node childNodeRight = node.getRightChild();
-    // No children
-    if (childNodeLeft == null && childNodeRight == null) {
-      // encode(path,node);
-      correspondanceTable.put(node.getKey(), path);
+  /**
+   * <p>Creates a correspondance table using a given node.</p>
+   * <p>It assumes that the nodes are arranged as a Huffman tree.</p>
+   *
+   * @param node
+   * @return
+   */
+  private Map<Character, String> createCorrespondanceTable(Node node) {
+    return this.correspondanceTableCreator(
+        node,
+        new StringBuilder(),
+        new HashMap<>()
+      );
+  }
+
+  /**
+   * <p>Creates a correspondance table for a given node assuming its <br>
+   * child nodes are arranged as a Huffman tree.</p>
+   * @param node The root node.
+   * @param path The path of the node (Simply pass {@code new StringBuilder()})
+   * @param correspondance The correspondance table (Simply pass {@code new HashMap<Character, String>()})
+   * @return
+   */
+  private Map<Character, String> correspondanceTableCreator(
+    Node node,
+    StringBuilder path,
+    Map<Character, String> correspondance
+  ) {
+    // Is leaf
+    if (node.isLeaf()) {
+      correspondance.put(node.getKey(), path.toString());
     } else {
       // left child
-      if (childNodeLeft != null) {
-        createcorrespondanceTable(childNodeLeft, path + "1");
-        // right child
-      }
-      if (childNodeRight != null) {
-        createcorrespondanceTable(childNodeRight, path + "0");
-      }
-    }
-  }
+      correspondanceTableCreator(
+        node.getLeftChild(),
+        path.append('0'),
+        correspondance
+      );
+      path.deleteCharAt(path.length() - 1); // Flush
 
-  public static void encode(String path) throws IOException {
-    if (path == "") {
-      encodeOutputStream.write(0);
-    } else {
-      encodeOutputStream.write((path + "\n").getBytes());
+      correspondanceTableCreator(
+        node.getRightChild(),
+        path.append('1'),
+        correspondance
+      );
+      path.deleteCharAt(path.length() - 1); // Flush
     }
-  }
 
-  public static void testBinaryFile() throws IOException {
-    File file = new File("src/laboratoire2/Temp_2.txt");
+    return correspondance;
   }
 
   public static void main(String[] args) {
     String initial = "src/laboratoire2/Temp.txt";
     String compressed = "src/laboratoire2/TempC.bin";
-    String decompressed = "src/laboratoire2/TempD.bin";
+    String decompressed = "src/laboratoire2/TempD.txt";
 
     Huffman huff = new Huffman();
     huff.Compresser(initial, compressed);
     huff.Decompresser(compressed, decompressed);
+
     File initialFile = new File(initial);
     File compressedFile = new File(compressed);
 
-    System.out.println("Initial file size " + initialFile.length() + " bytes");
+    System.out.println("Initial size: " + initialFile.length() + " bytes");
     System.out.println(
-      "Compressed file size " + compressedFile.length() + " bytes"
+      "Compressed size: " + compressedFile.length() + " bytes"
     );
-    /*try {
-      LinkedHashMap<Character, Integer> frequency = huff.createFrequencyTable(
-        "src/laboratoire2/Temp.txt"
-      );
-      Node tree = huff.createHuffmanTree(frequency);
-      try {
-        File file = new File("src/laboratoire2/Temp_2.txt");
-        file.delete();
-        encodeOutputStream =
-          new FileOutputStream(new File("src/laboratoire2/Temp_2.txt"), true);
-        bos = new BitOutputStream("src/laboratoire2/Temp_2.txt");
-        encodeOutputStream.write((frequency + "\n").getBytes());
-        huff.createcorrespondanceTable(tree, "");
-        //huff.writeInFile(correspondanceTable);
-        correspondanceTable.forEach((key, val) -> {
-          System.out.println("key " + key);
-          System.out.println("value " + val);
-        });
-        testBinaryFile();
-        encodeOutputStream.flush();
-      } catch (Exception e) {
-        System.out.println(e);
-      }
-      // Formatting
-      /* frequency.forEach((key, val) -> {
-        String str = ("" + key + " : " + val);
-        str = str.replace(System.lineSeparator(), "HEY");
-        System.out.println(str);
-      }); */
-    /*} catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }*/
+    System.out.println(
+      "Compression ratio: " +
+      String.format(
+        "%.2f",
+        (double) initialFile.length() / (double) compressedFile.length()
+      )
+    );
   }
 }
