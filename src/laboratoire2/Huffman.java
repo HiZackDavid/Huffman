@@ -28,7 +28,7 @@ public class Huffman {
     // Wrtite compressed output
     try {
       FileInputStream reader = new FileInputStream(nomFichierEntre);
-      BitOutputStream bos = new BitOutputStream(nomFichierSortie);
+      BitOutputStream bos = new BitOutputStream(nomFichierSortie + ".bin");
       BufferedInputStream bis = new BufferedInputStream(reader);
 
       int singleCharInt;
@@ -48,8 +48,9 @@ public class Huffman {
       int lastDotIndex = nomFichierSortie.lastIndexOf('.');
       String compressedTreeFilePath =
         nomFichierSortie.substring(0, lastDotIndex) +
-        "H" +
-        nomFichierSortie.substring(lastDotIndex);
+        "HT" +
+        nomFichierSortie.substring(lastDotIndex) +
+        ".bin";
 
       this.writeTree(huffmanTree, compressedTreeFilePath);
     } catch (FileNotFoundException e) {
@@ -139,7 +140,12 @@ public class Huffman {
   }
 
   public void Decompresser(String nomFichierEntre, String nomFichierSortie) {
-    Node huffmanTreeRoot = this.readTree("src/laboratoire2/TempCH.bin");
+    int lastDotIndex = nomFichierEntre.indexOf('.');
+    String huffmanTreeFilePath =
+      nomFichierEntre.substring(0, lastDotIndex) +
+      "HT" +
+      nomFichierEntre.substring(lastDotIndex);
+    Node huffmanTreeRoot = this.readTree(huffmanTreeFilePath);
 
     try {
       BitInputStream bis = new BitInputStream(nomFichierEntre);
@@ -359,12 +365,12 @@ public class Huffman {
 
   public static void main(String[] args) {
     String initial = "src/laboratoire2/Temp.txt";
-    String compressed = "src/laboratoire2/TempC.bin";
+    String compressed = "src/laboratoire2/Temp.txt";
     String decompressed = "src/laboratoire2/TempD.txt";
 
     Huffman huff = new Huffman();
     huff.Compresser(initial, compressed);
-    huff.Decompresser(compressed, decompressed);
+    huff.Decompresser(compressed + ".bin", decompressed);
 
     File initialFile = new File(initial);
     File compressedFile = new File(compressed);
