@@ -19,12 +19,6 @@ public class Huffman {
     Node huffmanTree = this.createHuffmanTree(nomFichierEntre);
     Map<Character, String> correspondance =
       this.createCorrespondanceTable(huffmanTree);
-
-    System.out.println(
-      "Frequency table : " + this.createFrequencyTable(nomFichierEntre)
-    );
-    System.out.println("Correspondance table : " + correspondance);
-
     try {
       FileInputStream reader = new FileInputStream(nomFichierEntre);
       BitOutputStream bos = new BitOutputStream(nomFichierSortie);
@@ -33,15 +27,18 @@ public class Huffman {
       // Write the compressed HuffmanTree
       this.writeTree(huffmanTree, bos);
 
-      // TODO: REMOVE
-      System.out.println("Compressed Huffman Tree : ");
-      BitInputStream bisTemp = new BitInputStream(nomFichierSortie);
-      int valueHT;
-      while ((valueHT = bisTemp.readBit()) != END_OF_FILE) {
-        System.out.print(valueHT);
+      int count = this.countCompressedFileCharacters(nomFichierEntre);
+      System.out.println("Count : " + count);
+      String countInBinary = Integer.toBinaryString(count);
+      if (countInBinary.length() < 32) {
+        int missingBits = 32 - countInBinary.length();
+        for (int i = 0; i < missingBits; i++) {
+          countInBinary = '0' + countInBinary;
+        }
       }
-      System.out.println();
-      bisTemp.close();
+      for (int i = 0; i < countInBinary.length(); i++) {
+        bos.writeBit(Integer.parseInt(countInBinary.charAt(i) + ""));
+      }
 
       // Write the compressed output
       int singleCharInt;
@@ -52,23 +49,6 @@ public class Huffman {
       bis.close();
       bos.close();
       reader.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    // TODO : REMOVE
-    try {
-      FileInputStream fisTemp = new FileInputStream(nomFichierSortie);
-      BitInputStream buff = new BitInputStream(nomFichierSortie);
-      System.out.println("Compressed file : ");
-      int value;
-      while ((value = buff.readBit()) != END_OF_FILE) {
-        System.out.print(value);
-      }
-      System.out.println();
-      buff.close();
-      fisTemp.close();
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -107,7 +87,6 @@ public class Huffman {
     // Is leaf
     if (huffmanTree.isLeaf()) {
       count++;
-
       String charToByte = Integer.toBinaryString(huffmanTree.getKey());
       if (charToByte.length() < 8) {
         int missingBits = 8 - charToByte.length();
@@ -181,31 +160,63 @@ public class Huffman {
     }
   }
 
-  public void Decompresser(String nomFichierEntre, String nomFichierSortie) {
-    Node huffmanTreeRoot = this.readTree(nomFichierEntre);
+  private int countCompressedFileCharacters(String filePath) {
+    int count = 0;
+    try {
+      FileInputStream fis = new FileInputStream(filePath);
+      BufferedInputStream bis = new BufferedInputStream(fis);
+      while (bis.read() != END_OF_FILE) {
+        count++;
+      }
+      bis.close();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
 
+    return count;
+  }
+
+  public void Decompresser(String nomFichierEntre, String nomFichierSortie) {
     try {
       BitInputStream bis = new BitInputStream(nomFichierEntre);
       FileOutputStream fos = new FileOutputStream(nomFichierSortie);
       BufferedOutputStream bos = new BufferedOutputStream(fos);
 
+      String huffmanTreePrefix = "";
+      for (int i = 0; i < 32; i++) {
+        huffmanTreePrefix += bis.readBit();
+      }
+      int limit = Integer.parseInt(huffmanTreePrefix, 2);
+
+      Node huffmanTreeRoot = this.readTree(bis, limit);
+
+      String compressedFilePrefix = "";
+      for (int i = 0; i < 32; i++) {
+        compressedFilePrefix += bis.readBit();
+      }
+      limit = Integer.parseInt(compressedFilePrefix, 2);
+
       int direction;
       Node tree = huffmanTreeRoot;
-      /* while ((direction = bis.readBit()) != END_OF_FILE) {
+      while (limit != 0 && (direction = bis.readBit()) != END_OF_FILE) {
         if (direction == 0) {
           tree = tree.getLeftChild();
           if (tree.isLeaf()) {
             bos.write(tree.getKey());
             tree = huffmanTreeRoot;
+            limit--;
           }
         } else {
           tree = tree.getRightChild();
           if (tree.isLeaf()) {
             bos.write(tree.getKey());
             tree = huffmanTreeRoot;
+            limit--;
           }
         }
-      } */
+      }
 
       bos.close();
       fos.close();
@@ -218,47 +229,27 @@ public class Huffman {
   }
 
   /**
-   * <p>Builds a huffman tree from a compressed version of the tree in binary file.</p>
-   * @param filePath The location of the compressed Huffman Tree in a binary file.
-   * @return A single node as a huffman tree (with the frequency all set to 0).
-   */
-  private Node readTree(String filePath) {
-    BitInputStream bis = new BitInputStream(filePath);
-
-    String nbBitsForHuffmanTree = "";
-    // Get the prefix (32 bits that represent the number of bits for the huffman tree)
-    for (int i = 0; i < 32; i++) {
-      System.out.print(bis.readBit());
-    }
-    System.out.println();
-
-    Node node = this.readTree(bis);
-
-    bis.close();
-
-    return node;
-  }
-
-  /**
    * <p>Reads the huffman tree in binary form that is found in a compressed file <br>
    * and returns a single node as a huffman tree (with the frequency all set to 0).</p>
    *
    * @param bis The bit reader (Simply pass {@code new BitInputStream(filePath)})
    * @return A single node as a huffman tree (with the frequency all set to 0).
    */
-  private Node readTree(BitInputStream bis) {
+  private Node readTree(BitInputStream bis, int limit) {
     int value;
-    while ((value = bis.readBit()) != END_OF_FILE) {
+    while (limit != 0 && (value = bis.readBit()) != END_OF_FILE) {
+      limit--;
       if (value == 1) {
         String binary = "";
         for (int i = 0; i < 8; i++) {
           binary += bis.readBit();
+          limit--;
         }
         return new Node((char) Integer.parseInt(binary, 2), 0);
       } else {
         Node internalNode = new Node(Node.EMPTY_KEY, 0);
-        internalNode.setLeftChild(readTree(bis));
-        internalNode.setRightChild(readTree(bis));
+        internalNode.setLeftChild(readTree(bis, limit));
+        internalNode.setRightChild(readTree(bis, limit));
         return internalNode;
       }
     }
@@ -398,13 +389,13 @@ public class Huffman {
   }
 
   public static void main(String[] args) {
-    String initial = "src/laboratoire2/Temp.txt";
+    String initial = "src/laboratoire2/exemple.txt";
     String compressed = "src/laboratoire2/Temp.bin";
-    String decompressed = "src/laboratoire2/TempD.txt";
+    String decompressed = "src/laboratoire2/exemple2.txt";
 
     Huffman huff = new Huffman();
     huff.Compresser(initial, compressed);
-    //huff.Decompresser(compressed, decompressed);
+    huff.Decompresser(compressed, decompressed);
 
     File initialFile = new File(initial);
     File compressedFile = new File(compressed);
