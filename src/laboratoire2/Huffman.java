@@ -18,7 +18,11 @@ public class Huffman {
   public void Compresser(String nomFichierEntre, String nomFichierSortie) {
     Node huffmanTree = this.createHuffmanTree(nomFichierEntre);
     Map<Character, String> correspondance =
-      this.createCorrespondanceTable(huffmanTree);
+      this.createCorrespondanceTable(
+          huffmanTree,
+          new StringBuilder(),
+          new HashMap<>()
+        );
     try {
       FileInputStream reader = new FileInputStream(nomFichierEntre);
       BitOutputStream bos = new BitOutputStream(nomFichierSortie);
@@ -332,21 +336,6 @@ public class Huffman {
   }
 
   /**
-   * <p>Creates a correspondance table using a given node.</p>
-   * <p>It assumes that the nodes are arranged as a Huffman tree.</p>
-   *
-   * @param node
-   * @return
-   */
-  private Map<Character, String> createCorrespondanceTable(Node node) {
-    return this.correspondanceTableCreator(
-        node,
-        new StringBuilder(),
-        new HashMap<>()
-      );
-  }
-
-  /**
    * <p>Creates a correspondance table for a given node assuming its <br>
    * child nodes are arranged as a Huffman tree.</p>
    * @param node The root node.
@@ -354,7 +343,7 @@ public class Huffman {
    * @param correspondance The correspondance table (Simply pass {@code new HashMap<Character, String>()})
    * @return
    */
-  private Map<Character, String> correspondanceTableCreator(
+  private Map<Character, String> createCorrespondanceTable(
     Node node,
     StringBuilder path,
     Map<Character, String> correspondance
@@ -364,14 +353,14 @@ public class Huffman {
       correspondance.put(node.getKey(), path.toString());
     } else {
       // left child
-      correspondanceTableCreator(
+      createCorrespondanceTable(
         node.getLeftChild(),
         path.append('0'),
         correspondance
       );
       path.deleteCharAt(path.length() - 1); // Flush
 
-      correspondanceTableCreator(
+      createCorrespondanceTable(
         node.getRightChild(),
         path.append('1'),
         correspondance
