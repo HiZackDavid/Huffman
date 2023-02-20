@@ -383,27 +383,18 @@ public class Huffman {
   }
 
   public static void main(String[] args) {
-    String initial = "src/laboratoire2/exemple.txt";
-    String compressed = "src/laboratoire2/compressed.bin";
-    String decompressed = "src/laboratoire2/exemple2.txt";
+    if (args.length != 3) {
+      System.err.println("usage: [-c|-d] INPUTFILE OUTPUTFILE");
+      System.exit(1);
+    }
 
-    Huffman huff = new Huffman();
-    huff.Compresser(initial, compressed);
-    huff.Decompresser(compressed, decompressed);
-
-    File initialFile = new File(initial);
-    File compressedFile = new File(compressed);
-
-    System.out.println("Initial size: " + initialFile.length() + " bytes");
-    System.out.println(
-      "Compressed size: " + compressedFile.length() + " bytes"
-    );
-    System.out.println(
-      "Compression ratio: " +
-      String.format(
-        "%.2f",
-        (double) initialFile.length() / (double) compressedFile.length()
-      )
-    );
+    if (args[0].equals("-c")) {
+      new Huffman().Compresser(args[1], args[2]);
+    } else if (args[0].equals("-d")) {
+      new Huffman().Decompresser(args[1], args[2]);
+    } else {
+      System.err.println("usage: [-c|-d] INPUTFILE OUTPUTFILE");
+      System.exit(1);
+    }
   }
 }
