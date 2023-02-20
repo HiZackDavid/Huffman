@@ -28,7 +28,6 @@ public class Huffman {
       this.writeTree(huffmanTree, bos);
 
       int count = this.countCompressedFileCharacters(nomFichierEntre);
-      System.out.println("Count : " + count);
       String countInBinary = Integer.toBinaryString(count);
       if (countInBinary.length() < 32) {
         int missingBits = 32 - countInBinary.length();
@@ -116,11 +115,6 @@ public class Huffman {
     // Is leaf
     if (huffmanTree.isLeaf()) {
       bos.writeBit(1);
-      System.out.println(
-        huffmanTree.getKey() +
-        " to binary =" +
-        Integer.toBinaryString(huffmanTree.getKey())
-      );
       String charToByte = Integer.toBinaryString(huffmanTree.getKey());
       if (charToByte.length() < 8) {
         int missingBits = 8 - charToByte.length();
@@ -390,7 +384,7 @@ public class Huffman {
 
   public static void main(String[] args) {
     String initial = "src/laboratoire2/exemple.txt";
-    String compressed = "src/laboratoire2/Temp.bin";
+    String compressed = "src/laboratoire2/compressed.bin";
     String decompressed = "src/laboratoire2/exemple2.txt";
 
     Huffman huff = new Huffman();
