@@ -1,4 +1,4 @@
-package laboratoire2;
+package huffman;
 
 // The BitOutputStream and BitInputStream classes provide the ability to
 // write and read individual bits to a file in a compact form.  One major

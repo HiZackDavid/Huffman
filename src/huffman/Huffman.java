@@ -1,4 +1,4 @@
-package laboratoire2;
+package huffman;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -31,17 +31,9 @@ public class Huffman {
       // Write the compressed HuffmanTree
       this.writeTree(huffmanTree, bos);
 
+      // Write the prefix
       int count = this.countCompressedFileCharacters(nomFichierEntre);
-      String countInBinary = Integer.toBinaryString(count);
-      if (countInBinary.length() < 32) {
-        int missingBits = 32 - countInBinary.length();
-        for (int i = 0; i < missingBits; i++) {
-          countInBinary = '0' + countInBinary;
-        }
-      }
-      for (int i = 0; i < countInBinary.length(); i++) {
-        bos.writeBit(Integer.parseInt(countInBinary.charAt(i) + ""));
-      }
+      this.writePrefix(count, bos);
 
       // Write the compressed output
       int singleCharInt;
@@ -54,6 +46,24 @@ public class Huffman {
       reader.close();
     } catch (IOException e) {
       e.printStackTrace();
+    }
+  }
+
+  /**
+   * Writes a number in a 32 bit format.
+   * @param count
+   * @param bos
+   */
+  private void writePrefix(int count, BitOutputStream bos) {
+    String countInBinary = Integer.toBinaryString(count);
+    if (countInBinary.length() < 32) {
+      int missingBits = 32 - countInBinary.length();
+      for (int i = 0; i < missingBits; i++) {
+        countInBinary = '0' + countInBinary;
+      }
+    }
+    for (int i = 0; i < countInBinary.length(); i++) {
+      bos.writeBit(Integer.parseInt(countInBinary.charAt(i) + ""));
     }
   }
 

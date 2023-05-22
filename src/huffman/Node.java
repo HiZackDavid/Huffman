@@ -1,4 +1,4 @@
-package laboratoire2;
+package huffman;
 
 public class Node implements Comparable<Node> {
 
